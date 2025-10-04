@@ -93,7 +93,7 @@ class PeriodicTester:
         try:
             print(f"🚀 Starting Hysteria with config: {config_name}")
             self.hysteria_process = subprocess.Popen(
-                ['/etc/hysteria/hysteria', '-c', config_path],
+                ['/usr/local/bin/hysteria', '-c', config_path],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True

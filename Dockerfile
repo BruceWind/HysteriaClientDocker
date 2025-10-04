@@ -21,8 +21,8 @@ RUN ARCH=$(uname -m) && \
         *) echo "Unsupported architecture: $ARCH" && exit 1 ;; \
     esac && \
     echo "Downloading Hysteria for architecture: $HYSTERIA_ARCH" && \
-    curl -L -o /etc/hysteria/hysteria "https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-${HYSTERIA_ARCH}" && \
-    chmod +x /etc/hysteria/hysteria
+    curl -L -o /usr/local/bin/hysteria "https://download.hysteria.network/app/latest/hysteria-linux-${HYSTERIA_ARCH}" && \
+    chmod +x /usr/local/bin/hysteria
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .

@@ -69,9 +69,15 @@ def parse_hysteria_url(url):
         # Parse proxy settings
         if 'socks5' in query_params:
             config['socks5'] = {'listen': query_params['socks5'][0]}
+        else:
+            # Add default SOCKS5 proxy on port 1080
+            config['socks5'] = {'listen': '127.0.0.1:1080'}
         
         if 'http' in query_params:
             config['http'] = {'listen': query_params['http'][0]}
+        else:
+            # Add default HTTP proxy on port 8080
+            config['http'] = {'listen': '127.0.0.1:8080'}
         
         return config
         

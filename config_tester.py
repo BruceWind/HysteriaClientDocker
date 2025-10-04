@@ -91,7 +91,7 @@ def run_hysteria_test(config_path, proxy_port=1080, test_url="https://www.google
     # Start Hysteria process
     try:
         process = subprocess.Popen(
-            ['/etc/hysteria/hysteria', '-c', test_config_path],
+            ['/usr/local/bin/hysteria', '-c', test_config_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -193,7 +193,7 @@ def print_test_summary(results):
     if successful_configs:
         best = successful_configs[0]
         print(f"\n🏆 Best config: {best['config']} ({best['latency']:.1f}ms)")
-        print(f"💡 To use: /etc/hysteria/hysteria -c /etc/hysteria/{best['config']}.yaml")
+        print(f"💡 To use: /usr/local/bin/hysteria -c /etc/hysteria/{best['config']}.yaml")
         return best['config']
     
     return None
