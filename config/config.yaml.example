@@ -1,0 +1,31 @@
+# Hysteria Client Configuration Example
+# Copy this file to config.yaml and customize for your needs
+
+server: your-server.com:443
+
+auth_str: your-auth-string
+
+# TLS settings
+tls:
+  insecure: false
+  sni: your-server.com
+
+# Connection settings
+bandwidth:
+  up: 1 gbps
+  down: 1 gbps
+
+# SOCKS5 proxy (optional)
+socks5:
+  listen: 0.0.0.0:1080
+
+# HTTP proxy (optional)
+http:
+  listen: 0.0.0.0:1088
+
+# TUN mode (requires privileged container)
+# tun:
+#   name: tun0
+#   address: 172.19.0.2/30
+#   gateway: 172.19.0.1
+#   dns: 8.8.8.8

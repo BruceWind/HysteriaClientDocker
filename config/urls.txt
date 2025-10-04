@@ -1,0 +1,13 @@
+# Hysteria URLs - one per line
+# Lines starting with # are comments and will be ignored
+# Empty lines are also ignored
+
+# Example URL (uncomment and modify as needed):
+# hysteria2://57903c8f@vs5.xxxx.top:57022?insecure=1&mport=57022&sni=www.bing.com#V5-抗丢包
+
+# Add your Hysteria URLs here:
+# hysteria2://password@server:port?insecure=1&sni=example.com#Server-Name
+
+# For testing purposes, you can add multiple URLs to test the selection logic:
+# hysteria2://test1@server1:443?insecure=1&sni=example1.com#Test-Server-1
+# hysteria2://test2@server2:443?insecure=1&sni=example2.com#Test-Server-2

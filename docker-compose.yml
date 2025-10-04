@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  hysteria-client:
+    build: .
+    container_name: hysteria-client
+    ports:
+      - "443:443/udp"
+      - "443:443/tcp"
+      # Add SOCKS5 proxy port if needed
+      - "1080:1080"
+      - "1089:1089"
+    volumes:
+      - ./config:/etc/hysteria
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    networks:
+      - hysteria-network
+    privileged: true # May be needed for TUN mode
+
+networks:
+  hysteria-network:
+    driver: bridge
