@@ -19,6 +19,13 @@ To get started with the Hysteria client in Docker, follow these simple steps:
 
 This command will build the necessary Docker images and start the Hysteria client service.
 
+
+## Exposed Ports
+
+The following ports are exposed for communication:
+
+- **SOCKS Port**: `1080`
+- **HTTP Port**: `1089`
 ## Usage
 
 After the service is up and running, the Hysteria client will be configured based on the URL specified in your `urls.txt` file. You can then interact with the service as needed.
