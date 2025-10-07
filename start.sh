@@ -19,6 +19,9 @@ sleep 2
 echo "Hysteria version:"
 hysteria version
 
+
+rm -f /etc/hysteria/*.yaml
+
 # Check if urls.txt file exists and process URLs
 if [ -f "/etc/hysteria/urls.txt" ]; then
     echo "🔗 Processing Hysteria URLs from urls.txt..."
@@ -55,29 +58,25 @@ if [ -f "/etc/hysteria/urls.txt" ]; then
                     echo ""
                     echo "📋 To run Hysteria with a specific config:"
                     echo "   docker exec -it hysteria-client hysteria -c /etc/hysteria/your-config.yaml"
-                    tail -f /dev/null
                 fi
             else
                 echo ""
                 echo "⚠️  All tests failed. Check the output above for details."
                 echo "Available configs:"
                 ls -la /etc/hysteria/*.yaml 2>/dev/null || echo "No config files available"
-                tail -f /dev/null
             fi
         else
-            # Single config - start directly
-            if [ -f "/etc/hysteria/config.yaml" ]; then
-                echo "🚀 Starting Hysteria client with default config..."
-                echo "🔄 Starting periodic testing (every 5 minutes)..."
-                exec python3 /app/periodic_tester.py -c "config"
-            else
-                echo "💡 Single config found. Available configs:"
-                ls -la /etc/hysteria/*.yaml 2>/dev/null || echo "No config files available"
-                echo ""
-                echo "📋 To run Hysteria with a specific config:"
-                echo "   docker exec -it hysteria-client hysteria -c /etc/hysteria/your-config.yaml"
-                tail -f /dev/null
-            fi
+            # 获取所有 *.yaml 文件并执行 hysteria 程序
+            for yaml_file in /etc/hysteria/*.yaml; do
+            # 检查是否存在符合条件的文件
+                if [ -f "$yaml_file" ]; then
+                    echo "exec: $yaml_file"
+                    # 在此处调用 hysteria 程序，示例命令如下（请根据实际情况调整）
+                    hysteria -c "$yaml_file"
+                else
+                    echo "No config files available"
+                fi
+            done
         fi
     else
         echo "❌ Failed to process URLs from urls.txt"
