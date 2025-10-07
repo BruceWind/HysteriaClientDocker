@@ -43,7 +43,7 @@ def parse_hysteria_url(url):
         # Build configuration
         config = {
             'server': f"{host}:{port}",
-            'auth_str': auth,
+            'auth': auth,
             'name': name
         }
         
@@ -71,13 +71,13 @@ def parse_hysteria_url(url):
             config['socks5'] = {'listen': query_params['socks5'][0]}
         else:
             # Add default SOCKS5 proxy on port 1080
-            config['socks5'] = {'listen': '127.0.0.1:1080'}
+            config['socks5'] = {'listen': '0.0.0.0:1080'}
         
         if 'http' in query_params:
             config['http'] = {'listen': query_params['http'][0]}
         else:
-            # Add default HTTP proxy on port 8080
-            config['http'] = {'listen': '127.0.0.1:8080'}
+            # Add default HTTP proxy on port 1089
+            config['http'] = {'listen': '0.0.0.0:1089'}
         
         return config
         
@@ -102,7 +102,7 @@ def generate_config_file(url, output_path="/etc/hysteria/config.yaml"):
         
         print(f"✅ Configuration generated successfully: {output_path}")
         print(f"📝 Server: {config['server']}")
-        print(f"🔐 Auth: {config['auth_str']}")
+        print(f"🔐 Auth: {config['auth']}")
         print(f"🏷️  Name: {config.get('name', 'N/A')}")
         
         if 'tls' in config:

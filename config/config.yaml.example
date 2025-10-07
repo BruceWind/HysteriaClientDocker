@@ -3,7 +3,7 @@
 
 server: your-server.com:443
 
-auth_str: your-auth-string
+auth: your-auth-string
 
 # TLS settings
 tls:

@@ -33,7 +33,7 @@ def create_test_config(base_config_path, test_config_path, proxy_port=1080):
         
         # Add SOCKS5 proxy configuration
         config['socks5'] = {
-            'listen': f'127.0.0.1:{proxy_port}'
+            'listen': f'0.0.0.0:{proxy_port}'
         }
         
         # Write test config
@@ -46,7 +46,7 @@ def create_test_config(base_config_path, test_config_path, proxy_port=1080):
         return False
 
 
-def test_connectivity(proxy_port=1080, test_url="https://www.google.com/generate_204", timeout=10):
+def test_connectivity(proxy_port=1080, test_url="https://www.google.com/generate_204", timeout=5):
     """
     Test connectivity through SOCKS5 proxy and measure latency
     """
@@ -91,7 +91,7 @@ def run_hysteria_test(config_path, proxy_port=1080, test_url="https://www.google
     # Start Hysteria process
     try:
         process = subprocess.Popen(
-            ['/usr/local/bin/hysteria', '-c', test_config_path],
+            ['hysteria', '-c', test_config_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -193,7 +193,7 @@ def print_test_summary(results):
     if successful_configs:
         best = successful_configs[0]
         print(f"\n🏆 Best config: {best['config']} ({best['latency']:.1f}ms)")
-        print(f"💡 To use: /usr/local/bin/hysteria -c /etc/hysteria/{best['config']}.yaml")
+        print(f"💡 To use: hysteria -c /etc/hysteria/{best['config']}.yaml")
         return best['config']
     
     return None

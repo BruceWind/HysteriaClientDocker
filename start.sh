@@ -17,7 +17,7 @@ sleep 2
 
 # Display Hysteria version
 echo "Hysteria version:"
-/usr/local/bin/hysteria version
+hysteria version
 
 # Check if urls.txt file exists and process URLs
 if [ -f "/etc/hysteria/urls.txt" ]; then
@@ -54,7 +54,7 @@ if [ -f "/etc/hysteria/urls.txt" ]; then
                     ls -la /etc/hysteria/*.yaml 2>/dev/null || echo "No config files available"
                     echo ""
                     echo "📋 To run Hysteria with a specific config:"
-                    echo "   docker exec -it hysteria-client /usr/local/bin/hysteria -c /etc/hysteria/your-config.yaml"
+                    echo "   docker exec -it hysteria-client hysteria -c /etc/hysteria/your-config.yaml"
                     tail -f /dev/null
                 fi
             else
@@ -75,7 +75,7 @@ if [ -f "/etc/hysteria/urls.txt" ]; then
                 ls -la /etc/hysteria/*.yaml 2>/dev/null || echo "No config files available"
                 echo ""
                 echo "📋 To run Hysteria with a specific config:"
-                echo "   docker exec -it hysteria-client /usr/local/bin/hysteria -c /etc/hysteria/your-config.yaml"
+                echo "   docker exec -it hysteria-client hysteria -c /etc/hysteria/your-config.yaml"
                 tail -f /dev/null
             fi
         fi
@@ -95,8 +95,8 @@ else
     echo "   - Generate single config: python3 /app/url_parser.py 'your-url'"
     echo "   - Test all configs: python3 /app/config_tester.py"
     echo "   - Start periodic testing: python3 /app/periodic_tester.py -c config-name"
-    echo "   - Run with config: /usr/local/bin/hysteria -c /etc/hysteria/config.yaml"
-    echo "   - Show version: /usr/local/bin/hysteria version"
+    echo "   - Run with config: hysteria -c /etc/hysteria/config.yaml"
+    echo "   - Show version: hysteria version"
     
     # Keep container running for manual operations
     tail -f /dev/null
