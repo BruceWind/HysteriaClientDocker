@@ -68,7 +68,7 @@ if [ -f "${CONFIG_DIR}/urls.txt" ]; then
                 echo "   • HTTP   : 0.0.0.0:1089"
                 echo ""
                 echo "🔁 Starting periodic tester every ${TEST_INTERVAL} seconds..."
-                exec python3 /app/periodic_tester.py -c "$best_config" -i "$TEST_INTERVAL"
+                exec python3 /app/boot_with_periordic_tester.py -c "$best_config" -i "$TEST_INTERVAL"
 
             else
                 echo ""
@@ -104,7 +104,7 @@ else
     echo "   - Process URLs file: python3 /app/url_parser.py --batch"
     echo "   - Generate single config: python3 /app/url_parser.py 'your-url'"
     echo "   - Test all configs: python3 /app/config_tester.py"
-    echo "   - Start periodic testing: python3 /app/periodic_tester.py -c config-name"
+    echo "   - Start periodic testing: python3 /app/boot_with_periordic_tester.py -c config-name"
     echo "   - Run with config: hysteria -c /etc/hysteria/config.yaml"
     echo "   - Show version: hysteria version"
     

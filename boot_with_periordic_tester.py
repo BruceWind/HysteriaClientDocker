@@ -283,7 +283,7 @@ def main() -> None:
     import argparse
 
     # Helpful banner to confirm that this entrypoint is actually running
-    print("🚀 periodic_tester.py main() starting...", flush=True)
+    print("🚀 boot_with_periordic_tester.py main() starting...", flush=True)
 
     parser = argparse.ArgumentParser(description="Periodic Hysteria best-config runner")
     parser.add_argument(

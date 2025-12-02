@@ -26,7 +26,7 @@ On startup the container:
 - parses every URL in `config/urls.txt` and generates YAML configs;
 - tests each config on an auxiliary SOCKS port (so that the public `1080/1089`
   ports stay free) and picks the fastest working option; and
-- launches `periodic_tester.py`, which keeps the selected config running on
+- launches `boot_with_periordic_tester.py`, which keeps the selected config running on
   `0.0.0.0:1080` (SOCKS5) and `0.0.0.0:1089` (HTTP) while re-testing every
   3 minutes on background ports to switch automatically when a better link
   appears.
