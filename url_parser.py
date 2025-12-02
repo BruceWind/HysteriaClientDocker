@@ -15,8 +15,10 @@ def parse_hysteria_url(url):
     """
     Parse a hysteria2:// URL and extract configuration parameters
     
-    Example URL:
-    hysteria2://57903c8f@vs5.xxxx.top:57022?insecure=1&mport=57022&sni=www.bing.com#V5-抗丢包
+    Example URLs:
+    hysteria2://57903c8f@v5.xxxx.top:57022?insecure=1&mport=57022&sni=www.bing.com#V5-抗丢包
+    hysteria2://d4aa6c84@v3.xxx.top:11092?insecure=1&mport=11092,20000-40000&sni=www.bing.com#V3-抗丢包
+    hysteria2://d4aa6c84@11.11.11.11:11092,20000-40000/?insecure=1&sni=www.bing.com#V3-抗丢包
     """
     try:
         # Parse the URL
@@ -30,19 +32,42 @@ def parse_hysteria_url(url):
         if not auth:
             raise ValueError("Missing authentication in URL")
         
-        # Extract server host and port
-        host = parsed.hostname
-        port = parsed.port or 443  # Default to 443 if not specified
-        
         # Extract query parameters
         query_params = parse_qs(parsed.query)
         
         # Extract name (fragment)
         name = unquote(parsed.fragment) if parsed.fragment else "Hysteria Client"
         
+        # Extract server host and port from netloc
+        # Handle cases where port might contain ranges like "11092,20000-40000"
+        netloc = parsed.netloc
+        # Remove auth part if present
+        if '@' in netloc:
+            netloc = netloc.split('@')[1]
+        
+        # Split host and port (port may contain comma-separated ranges)
+        if ':' in netloc:
+            host, port_part = netloc.rsplit(':', 1)
+            # port_part might be "11092,20000-40000" or just "11092"
+        else:
+            host = netloc
+            port_part = None
+        
+        # Build server string - prioritize mport query parameter, then port from URL
+        if 'mport' in query_params:
+            mport_value = query_params['mport'][0]
+            # mport can contain port ranges like "11092,20000-40000"
+            server = f"{host}:{mport_value}"
+        elif port_part:
+            # Use port from URL (may contain port ranges)
+            server = f"{host}:{port_part}"
+        else:
+            # Default to 443 if no port specified
+            server = f"{host}:443"
+        
         # Build configuration
         config = {
-            'server': f"{host}:{port}",
+            'server': server,
             'auth': auth,
             'name': name
         }

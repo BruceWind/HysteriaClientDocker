@@ -293,7 +293,7 @@ def main():
 
         successful.sort(key=lambda x: x['latency'])
         best = successful[0]['config']
-        print(best)
+        print(best) # this line make shell read this reuslt.
         sys.exit(0)
 
     # Normal mode: run with full output and summary

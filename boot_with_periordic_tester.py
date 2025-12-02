@@ -284,6 +284,9 @@ class PeriodicRunner:
                             f"old={old_latency:.1f}ms, new={new_latency:.1f}ms ({msg})",
                             flush=True,
                         )
+                        if new_latency < old_latency:
+                            # this saving make us cache the best latency after tests.
+                            self._save_current_config(previous_config, new_latency)
                         if new_latency <= old_latency + 30:
                             print(
                                 f"[{_ts()}] ✅ Latency not worse; skipping re-selection this round.",
