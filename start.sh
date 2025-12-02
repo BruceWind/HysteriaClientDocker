@@ -23,7 +23,7 @@ rm -f /etc/hysteria/*.yaml
 CONFIG_DIR="/etc/hysteria"
 
 # This interval should be greater than 300 seconds, otherwise connections may drop too quickly.
-TEST_INTERVAL="${HYSTERIA_TEST_INTERVAL:-600}"
+TEST_INTERVAL="${HYSTERIA_TEST_INTERVAL:-300}"
 
 # Check if urls.txt file exists and process URLs
 if [ -f "${CONFIG_DIR}/urls.txt" ]; then

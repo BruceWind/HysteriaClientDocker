@@ -31,6 +31,21 @@ On startup the container:
   3 minutes on background ports to switch automatically when a better link
   appears.
 
+### Notes about periodic testing
+
+- **Single URL / single config**:  
+  If `config/urls.txt` effectively results in just one working config, the
+  periodic tester will still run but will normally keep picking the same
+  config, so you will not see any meaningful switching.
+
+- **Short proxy pause when current proxy gets worse**:  
+  If the cached latency for the current proxy becomes noticeably worse, the
+  periodic tester may trigger a full re-evaluation round: the main Hysteria
+  process is briefly stopped while test instances are started on auxiliary
+  ports. In this case the main proxy (`1080/1089`) can stop accepting traffic
+  for roughly **10 seconds** during that window, while it looks for a better
+  config.
+
 
 ## Exposed Ports
 

@@ -23,7 +23,12 @@ import threading
 import json
 from datetime import datetime
 
-from config_tester import test_all_configs, print_test_summary
+from config_tester import (
+    test_all_configs,
+    print_test_summary,
+    test_connectivity,
+    resolve_test_urls,
+)
 
 
 def _ts() -> str:
@@ -41,15 +46,21 @@ class PeriodicRunner:
         config_dir: str = "/etc/hysteria",
         test_interval: int = 180,
         current_config_file: str = "/tmp/current_config.json",
+        main_proxy_port: int = 1080,
     ) -> None:
         self.config_dir = config_dir
         self.test_interval = test_interval  # seconds
         self.current_config_file = current_config_file
+        self.main_proxy_port = main_proxy_port
 
         self.running = True
         self.hysteria_process: subprocess.Popen | None = None
         self.current_config: str | None = None
         self.test_thread: threading.Thread | None = None
+
+        # Reuse the same URL resolution logic as config_tester so env/CLI
+        # overrides behave consistently.
+        self.test_urls = resolve_test_urls(None)
 
         # Load last known config (if any)
         self._load_current_config()
@@ -97,6 +108,36 @@ class PeriodicRunner:
     # ------------------------------------------------------------------ #
     # Hysteria process management
     # ------------------------------------------------------------------ #
+    def _measure_current_latency(self) -> tuple[bool, float, str]:
+        """
+        Measure latency through the main SOCKS5 proxy of the *currently
+        running* Hysteria process.
+        """
+        if not self.hysteria_process or self.hysteria_process.poll() is not None:
+            return False, 0.0, "Hysteria not running"
+
+        success, latency, message = test_connectivity(
+            proxy_port=self.main_proxy_port,
+            test_urls=self.test_urls,
+            timeout=5,
+        )
+        return success, latency, message
+
+    def _get_saved_latency(self) -> float | None:
+        """
+        Read the last saved latency from the state file (if present).
+        """
+        try:
+            if not os.path.exists(self.current_config_file):
+                return None
+            with open(self.current_config_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            value = data.get("latency")
+            return float(value) if value is not None else None
+        except Exception as e:  # pylint: disable=broad-except
+            print(f"⚠️  Could not read saved latency: {e}")
+            return None
+
     def stop_hysteria(self) -> None:
         """Stop current Hysteria process if running."""
         if not self.hysteria_process:
@@ -140,6 +181,25 @@ class PeriodicRunner:
             if self.hysteria_process.poll() is None:
                 self.current_config = config_name
                 print(f"[{_ts()}] ✅ Hysteria started successfully with {config_name}", flush=True)
+
+                # Immediately measure and persist current latency for later
+                # comparison in the periodic worker.
+                ok, latency, msg = self._measure_current_latency()
+                if ok:
+                    print(
+                        f"[{_ts()}] 📈 Initial latency for {config_name}: "
+                        f"{latency:.1f}ms ({msg})",
+                        flush=True,
+                    )
+                    # Persist this latency so future periodic rounds can
+                    # compare against it without keeping extra in-memory
+                    # state.
+                    self._save_current_config(config_name, latency)
+                else:
+                    print(
+                        f"[{_ts()}] ⚠️  Could not measure initial latency for {config_name}: {msg}",
+                        flush=True,
+                    )
                 return True
 
             print(f"[{_ts()}] ❌ Hysteria failed to start with {config_name}", flush=True)
@@ -208,8 +268,35 @@ class PeriodicRunner:
                 if not self.running:
                     break
 
-                # Stop current Hysteria before running tests to avoid interference
+                # Before we tear anything down, quickly measure latency on the
+                # *current* running config via the main proxy port. If the
+                # latency has not worsened compared to the cached value, skip
+                # this round entirely to avoid unnecessary restarts and keep
+                # a smoother user experience.
                 previous_config = self.current_config
+
+                if self.hysteria_process and previous_config:
+                    ok, new_latency, msg = self._measure_current_latency()
+                    old_latency = self._get_saved_latency()
+                    if ok and old_latency is not None:
+                        print(
+                            f"[{_ts()}] 🔍 Latency check before periodic switch: "
+                            f"old={old_latency:.1f}ms, new={new_latency:.1f}ms ({msg})",
+                            flush=True,
+                        )
+                        if new_latency <= old_latency + 30:
+                            print(
+                                f"[{_ts()}] ✅ Latency not worse; skipping re-selection this round.",
+                                flush=True,
+                            )
+                            continue
+                    elif not ok:
+                        print(
+                            f"[{_ts()}] ⚠️  Latency probe failed before periodic switch: {msg}",
+                            flush=True,
+                        )
+
+                # Stop current Hysteria before running tests to avoid interference
                 self.stop_hysteria()
 
                 best = self.find_best_config()
@@ -231,7 +318,6 @@ class PeriodicRunner:
                     print(f"🔄 Switching to new best config: {best_name}")
 
                 if self.start_hysteria(best_name):
-                    self._save_current_config(best_name, best_latency)
                     print(f"✅ Hysteria running with best config: {best_name}")
                 else:
                     print(f"❌ Failed to start best config {best_name}.")
