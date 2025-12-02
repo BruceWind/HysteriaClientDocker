@@ -90,7 +90,7 @@ def test_connectivity(proxy_port=1080, test_urls=None, timeout=5):
         for url in test_urls:
             start_time = time.time()
             try:
-                print(f"Testing {url} with proxies {proxies}")
+                print(f"Testing {url} with proxies {proxies}", flush=True)
                 response = requests.get(url, proxies=proxies, timeout=timeout)
                 
                 end_time = time.time()
@@ -123,7 +123,6 @@ def run_hysteria_test(config_path, proxy_port=1080, test_urls=None, test_duratio
     config_name = os.path.basename(config_path).replace('.yaml', '')
     test_config_path = config_path.replace('.yaml', '_test.yaml')
     
-    print(f"🧪 Testing config---: {config_name} (SOCKS5 port {proxy_port})")
     
     # Create test config with SOCKS5 proxy
     if not create_test_config(config_path, test_config_path, proxy_port):
@@ -181,21 +180,24 @@ def run_hysteria_test(config_path, proxy_port=1080, test_urls=None, test_duratio
         return False, 0, f"Process error: {str(e)}"
 
 
-def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_urls=None):
+def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_urls=None, quiet=False):
     """
     Test all config files and return results
     """
     config_files = find_config_files(config_dir)
     
     if not config_files:
-        print("❌ No config files found")
+        if not quiet:
+            print("❌ No config files found")
         return []
     
-    print(f"🔍 Found {len(config_files)} config file(s)")
+    if not quiet:
+        print(f"🔍 Found {len(config_files)} config file(s)")
     working_test_urls = test_urls or DEFAULT_TEST_URLS
-    print(f"🌐 Testing connectivity to: {', '.join(working_test_urls)}")
-    print(f"🔌 Using SOCKS5 proxy on port: {proxy_port}")
-    print("-" * 50)
+    if not quiet:
+        print(f"🌐 Testing connectivity to: {', '.join(working_test_urls)}")
+        print(f"🔌 Using SOCKS5 proxy on port: {proxy_port}")
+        print("-" * 50)
     
     results = []
     
@@ -213,10 +215,11 @@ def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_urls=None
             'message': message
         })
         
-        if success:
-            print(f"✅ {config_name}: {latency:.1f}ms - {message}")
-        else:
-            print(f"❌ {config_name}: {message}")
+        if not quiet:
+            if success:
+                print(f"✅ {config_name}: {latency:.1f}ms - {message}")
+            else:
+                print(f"❌ {config_name}: {message}")
         
         # Small delay between tests
         time.sleep(2)
@@ -277,20 +280,27 @@ def main():
     
     test_urls = resolve_test_urls(args.url)
 
-    # Test all configs
-    results = test_all_configs(args.dir, args.port, test_urls)
-    
-    # Get best config
-    best_config = print_test_summary(results)
-    
+    # If caller only wants the best config name, run in quiet mode and
+    # print *only* that name to stdout so shell command substitution works.
     if args.return_best:
-        # Return best config for shell script use
-        if best_config:
-             # 打印到 标准输出 (stdout) 的所有内容，并将其作为变量的值由shell读取。Python不需要使用 return 关键字，而是需要使用 print() 函数将结果输出到标准输出。
-            print(best_config) 
-            sys.exit(0)
-        else:
+        results = test_all_configs(args.dir, args.port, test_urls, quiet=True)
+        if not results:
             sys.exit(1)
+
+        successful = [r for r in results if r['success']]
+        if not successful:
+            sys.exit(1)
+
+        successful.sort(key=lambda x: x['latency'])
+        best = successful[0]['config']
+        print(best)
+        sys.exit(0)
+
+    # Normal mode: run with full output and summary
+    results = test_all_configs(args.dir, args.port, test_urls, quiet=False)
+    
+    # Get best config and print user-friendly summary
+    best_config = print_test_summary(results)
     
     # Exit with error if no configs succeeded
     if results and not any(r['success'] for r in results):

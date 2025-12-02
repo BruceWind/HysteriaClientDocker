@@ -34,6 +34,8 @@ if [ -f "${CONFIG_DIR}/urls.txt" ]; then
         config_files=$(ls ${CONFIG_DIR}/*.yaml 2>/dev/null || true)
         config_count=$(echo "$config_files" | grep -c ".yaml" || true)
 
+
+        # no urls.
         if [ "$config_count" -eq 0 ]; then
             echo "❌ No YAML configs were generated. Please check urls.txt."
             exit 1
@@ -50,9 +52,10 @@ if [ -f "${CONFIG_DIR}/urls.txt" ]; then
                 echo "🚀 Automatically selecting the best performing config..."
                 best_config=$(python3 /app/config_tester.py --return-best || true)
 
-                if [ -z "$best_config" ]; then
-                    first_yaml=$(echo "$config_files" | head -n 1) ## 取返回多行的第一行
-                    best_config=$(basename "$first_yaml") # 获取第一个yaml文件的名称
+                if [ -n "$best_config" ]; then
+                    first_yaml=$(echo "$config_files" | tail -n 1) ## get last line
+                    echo "Fallback YAML file (last in list): $first_yaml"
+                    best_config=$(basename "$first_yaml") # 获取最后一个yaml文件的名称
                     best_config="${best_config%.yaml}"
                     echo "ℹ️  Using fallback config: $best_config"
                 fi
