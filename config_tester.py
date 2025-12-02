@@ -188,7 +188,7 @@ def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_urls=None
     
     if not config_files:
         if not quiet:
-            print("❌ No config files found")
+            print("❌ No config files found", flush=True)
         return []
     
     if not quiet:
@@ -259,7 +259,7 @@ def print_test_summary(results):
     if successful_configs:
         best = successful_configs[0]
         print(f"\n🏆 Best config: {best['config']} ({best['latency']:.1f}ms)")
-        print(f"💡 To use: hysteria -c /etc/hysteria/{best['config']}.yaml")
+        ## print(f"💡 To use: hysteria -c /etc/hysteria/{best['config']}.yaml")
         return best['config']
     
     return None

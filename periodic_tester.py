@@ -26,6 +26,11 @@ from datetime import datetime
 from config_tester import test_all_configs, print_test_summary
 
 
+def _ts() -> str:
+    """Return current timestamp string for logs."""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
 class PeriodicRunner:
     """
     Simple periodic best-config runner built on top of `config_tester.py`.
@@ -84,7 +89,7 @@ class PeriodicRunner:
     # ------------------------------------------------------------------ #
     def _signal_handler(self, signum, frame) -> None:  # type: ignore[override]
         del frame  # unused
-        print(f"\n🛑 Received signal {signum}, shutting down periodic runner...")
+        print(f"\n🛑 Received signal {signum}, shutting down periodic runner...", flush=True)
         self.running = False
         self.stop_hysteria()
         sys.exit(0)
@@ -98,30 +103,30 @@ class PeriodicRunner:
             return
 
         try:
-            print("🛑 Stopping current Hysteria process...")
+            print(f"[{_ts()}] 🛑 Stopping current Hysteria process...", flush=True)
             self.hysteria_process.terminate()
             self.hysteria_process.wait(timeout=10)
-            print("✅ Hysteria process stopped")
+            print(f"[{_ts()}] ✅ Hysteria process stopped", flush=True)
         except subprocess.TimeoutExpired:
-            print("⚠️  Force killing Hysteria process...")
+            print(f"[{_ts()}] ⚠️  Force killing Hysteria process...", flush=True)
             self.hysteria_process.kill()
             self.hysteria_process.wait()
         except Exception as e:  # pylint: disable=broad-except
-            print(f"⚠️  Error stopping Hysteria: {e}")
+            print(f"[{_ts()}] ⚠️  Error stopping Hysteria: {e}", flush=True)
         finally:
             self.hysteria_process = None
 
     def start_hysteria(self, config_name: str) -> bool:
         """Start a long-lived Hysteria client for `config_name`."""
         config_path = os.path.join(self.config_dir, f"{config_name}.yaml")
-        print(f"start_hysteria# config_path: {config_path}")
+        print(f"[{_ts()}] start_hysteria# config_path: {config_path}", flush=True)
 
         if not os.path.exists(config_path):
-            print(f"❌ Config file not found: {config_path}")
+            print(f"[{_ts()}] ❌ Config file not found: {config_path}", flush=True)
             return False
 
         try:
-            print(f"🚀 Starting Hysteria with config: {config_name}")
+            print(f"[{_ts()}] 🚀 Starting Hysteria with config: {config_name}", flush=True)
             self.hysteria_process = subprocess.Popen(
                 ["hysteria", "-c", config_path],
                 stdout=subprocess.PIPE,
@@ -134,14 +139,14 @@ class PeriodicRunner:
 
             if self.hysteria_process.poll() is None:
                 self.current_config = config_name
-                print(f"✅ Hysteria started successfully with {config_name}")
+                print(f"[{_ts()}] ✅ Hysteria started successfully with {config_name}", flush=True)
                 return True
 
-            print(f"❌ Hysteria failed to start with {config_name}")
+            print(f"[{_ts()}] ❌ Hysteria failed to start with {config_name}", flush=True)
             self.hysteria_process = None
             return False
         except Exception as e:  # pylint: disable=broad-except
-            print(f"❌ Error starting Hysteria: {e}")
+            print(f"[{_ts()}] ❌ Error starting Hysteria: {e}", flush=True)
             self.hysteria_process = None
             return False
 
@@ -161,14 +166,14 @@ class PeriodicRunner:
         }
         or None if no working configs are found.
         """
-        print(f"\n🔄 Periodic test starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"\n[{_ts()}] 🔄 Periodic test starting...", flush=True)
 
         try:
             # Use a fixed base proxy port for tests; test_all_configs will offset per config
             results = test_all_configs(self.config_dir, proxy_port=1081)
 
             if not results:
-                print("❌ No configs available for testing")
+                print("❌ No configs available for testing", flush=True)
                 return None
 
             # Reuse summary printer for nice output (we ignore its return value here)
@@ -176,12 +181,12 @@ class PeriodicRunner:
 
             successful = [r for r in results if r.get("success")]
             if not successful:
-                print("❌ No working configs found")
+                print("❌ No working configs found", flush=True)
                 return None
 
             successful.sort(key=lambda r: r["latency"])
             best = successful[0]
-            print(f"🏆 Best config (periodic): {best['config']} ({best['latency']:.1f}ms)")
+            ## print(f"🏆 Best config (periodic): {best['config']} ({best['latency']:.1f}ms)")
             return best
         except Exception as e:  # pylint: disable=broad-except
             print(f"❌ Error during periodic test: {e}")
@@ -203,27 +208,33 @@ class PeriodicRunner:
                 if not self.running:
                     break
 
+                # Stop current Hysteria before running tests to avoid interference
+                previous_config = self.current_config
+                self.stop_hysteria()
+
                 best = self.find_best_config()
                 if not best:
-                    print("⚠️  No usable config found in this round, keeping current config.")
+                    print("⚠️  No usable config found in this round.")
+                    # If we had a previous config, try to bring it back up
+                    if previous_config:
+                        print(f"🔁 Restoring previous config: {previous_config}")
+                        self.start_hysteria(previous_config)
                     continue
 
                 best_name = best["config"]
                 best_latency = best["latency"]
 
-                # If this is the same config as we're already running, do nothing
-                if best_name == self.current_config:
-                    print(f"✅ Current config {self.current_config} is still the best.")
-                    continue
-
-                print(f"🔄 Switching to new best config: {best_name}")
-                self.stop_hysteria()
+                # Start (or restart) Hysteria with the best config found this round
+                if best_name == previous_config:
+                    print(f"✅ {best_name} is still the best, restarting Hysteria with it.")
+                else:
+                    print(f"🔄 Switching to new best config: {best_name}")
 
                 if self.start_hysteria(best_name):
                     self._save_current_config(best_name, best_latency)
-                    print(f"✅ Successfully switched to {best_name}")
+                    print(f"✅ Hysteria running with best config: {best_name}")
                 else:
-                    print(f"❌ Failed to start new best config {best_name}.")
+                    print(f"❌ Failed to start best config {best_name}.")
             except Exception as e:  # pylint: disable=broad-except
                 print(f"❌ Error in periodic worker: {e}")
 
@@ -240,10 +251,10 @@ class PeriodicRunner:
 
         if start_config:
             if not self.start_hysteria(start_config):
-                print(f"❌ Failed to start with initial config: {start_config}")
+                print(f"❌ Failed to start with initial config: {start_config}", flush=True)
                 # Don't exit; the periodic worker might still find a working one later
         else:
-            print("ℹ️  No initial config provided and no previous state; will wait for periodic tests.")
+            print("ℹ️  No initial config provided and no previous state; will wait for periodic tests.", flush=True)
 
         # Start periodic testing in the background
         self.test_thread = threading.Thread(target=self._periodic_worker, daemon=True)
@@ -262,7 +273,7 @@ class PeriodicRunner:
                         self.start_hysteria(self.current_config)
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("\n🛑 Received keyboard interrupt, stopping...")
+            print("\n🛑 Received keyboard interrupt, stopping...", flush=True)
         finally:
             self.running = False
             self.stop_hysteria()
@@ -301,6 +312,11 @@ def main() -> None:
         test_interval=args.interval,
     )
     print(f"Initial config from CLI: {args.config}", flush=True)
+    # check if args.config is a valid config name, if so throw an error
+    if args.config and not os.path.exists(os.path.join(args.dir, f"{args.config}.yaml")):
+        print(f"❌ Config file not found: {os.path.join(args.dir, f'{args.config}.yaml')}")
+        sys.exit(1)
+
     print("--------------------------------")
     runner.start(args.config)
 

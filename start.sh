@@ -21,7 +21,9 @@ hysteria version
 rm -f /etc/hysteria/*.yaml
 
 CONFIG_DIR="/etc/hysteria"
-TEST_INTERVAL="${HYSTERIA_TEST_INTERVAL:-180}"
+
+# This interval should be greater than 300 seconds, otherwise connections may drop too quickly.
+TEST_INTERVAL="${HYSTERIA_TEST_INTERVAL:-600}"
 
 # Check if urls.txt file exists and process URLs
 if [ -f "${CONFIG_DIR}/urls.txt" ]; then
@@ -57,7 +59,7 @@ if [ -f "${CONFIG_DIR}/urls.txt" ]; then
                     echo "Fallback YAML file (last in list): $first_yaml"
                     best_config=$(basename "$first_yaml") # 获取最后一个yaml文件的名称
                     best_config="${best_config%.yaml}"
-                    echo "ℹ️  Using fallback config: $best_config"
+                    # echo "ℹ️  Using fallback config: $best_config"
                 fi
 
                 echo ""
