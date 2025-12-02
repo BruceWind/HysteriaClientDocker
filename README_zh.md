@@ -1,0 +1,60 @@
+## Hysteria 客户端 Docker
+
+本仓库提供了一个用于运行 Hysteria 客户端的 Docker 环境。Hysteria 是一个为安全、高性能通信而设计的项目。
+
+## 快速开始
+
+按照以下步骤即可快速在 Docker 中运行 Hysteria 客户端：
+
+1. **添加你的 URL：**  
+   在 `config/urls.txt` 中添加一个或多个 Hysteria URL。容器启动时会解析每一行合法的 URL，并自动生成对应的配置文件。
+
+2. **使用 Docker 构建并运行：**
+
+   在终端中执行：
+
+   ```bash
+   docker compose build && docker compose up -d
+   ```
+
+   该命令会构建所需的 Docker 镜像，并以后台方式启动 Hysteria 客户端服务。
+
+容器启动后将执行以下操作：
+
+- 解析 `config/urls.txt` 中的每个 URL 并生成对应的 YAML 配置文件；
+- 在辅助 SOCKS 端口上测试每个配置（这样公共端口 `1080/1089` 保持空闲），并自动选择最快且可用的配置；
+- 启动 `periodic_tester.py`，在 `0.0.0.0:1080`（SOCKS5）和 `0.0.0.0:1089`（HTTP）上保持当前选中的配置持续运行，同时每 3 分钟在后台端口上重新测试连接质量，当发现更优链路时自动切换。
+
+## 暴露端口
+
+容器对外暴露以下端口：
+
+- **SOCKS 端口**：`1080`
+- **HTTP 端口**：`1089`
+
+## 环境变量
+
+- `HYSTERIA_TEST_INTERVAL`（单位：秒，默认值 `180`）：周期性测试脚本在后台重新进行连通性检测的时间间隔。在此期间，客户端会持续使用主代理端口。
+- `HYSTERIA_TEST_URLS`（逗号分隔）：覆盖默认的探测 URL 列表  
+  （默认值：`https://cp.cloudflare.com/generate_204`、`https://www.bing.com`、`https://www.google.com/generate_204`）。  
+  如果你所在地区对某些站点有限制，可以自定义此列表。
+
+## 使用方式
+
+服务启动并运行后，只需将你的设备代理指向：
+
+- `localhost:1080`（SOCKS5）
+- `localhost:1089`（HTTP）
+
+即可通过选定的 Hysteria 隧道访问网络。
+
+## 贡献
+
+欢迎通过提交 Issue、提出功能建议或发起 Pull Request 来为本项目做出贡献。
+
+## 致谢
+
+本项目使用了由 [apernet](https://github.com/apernet/hysteria) 开发的 Hysteria 客户端。  
+关于功能和使用的更多细节，请参考其官方文档。
+
+

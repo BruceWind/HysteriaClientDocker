@@ -1,4 +1,6 @@
-# Hysteria Client Docker
+## Hysteria Client Docker
+
+**Languages**: English | [中文说明](README_zh.md)
 
 This repository provides a Docker setup for running the Hysteria client. Hysteria is a project designed for secure, high-performance communication.
 
@@ -14,7 +16,7 @@ To get started with the Hysteria client in Docker, follow these simple steps:
    Execute the following command in your terminal:
 
    ```bash
-   docker compose build && docker compose up
+   docker compose build && docker compose up -d
    ```
 
 This command will build the necessary Docker images and start the Hysteria client service.
