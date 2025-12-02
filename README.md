@@ -35,8 +35,8 @@ On startup the container:
 
 - **Single URL / single config**:  
   If `config/urls.txt` effectively results in just one working config, the
-  periodic tester will still run but will normally keep picking the same
-  config, so you will not see any meaningful switching.
+  program will simply use that config to establish the tunnel and will **not
+  enter the periodic "find best config" loop**.
 
 - **Short proxy pause when current proxy gets worse**:  
   If the cached latency for the current proxy becomes noticeably worse, the
