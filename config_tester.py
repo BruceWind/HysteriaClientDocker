@@ -16,6 +16,30 @@ from concurrent.futures import ThreadPoolExecutor
 import yaml
 
 
+DEFAULT_TEST_URLS = [
+    "https://cp.cloudflare.com/generate_204",
+    "https://www.bing.com",
+    "https://www.google.com/generate_204",
+]
+
+
+def resolve_test_urls(cli_value=None):
+    """
+    Decide which test URLs to use.
+
+    Priority:
+      1. CLI argument (comma-separated)
+      2. HYSTERIA_TEST_URLS env var (comma-separated)
+      3. DEFAULT_TEST_URLS
+    """
+    source = cli_value or os.getenv("HYSTERIA_TEST_URLS")
+    if source:
+        urls = [u.strip() for u in source.split(",") if u.strip()]
+        if urls:
+            return urls
+    return DEFAULT_TEST_URLS[:]
+
+
 def find_config_files(config_dir="/etc/hysteria"):
     """Find all YAML config files in the directory"""
     pattern = os.path.join(config_dir, "*.yaml")
@@ -46,43 +70,60 @@ def create_test_config(base_config_path, test_config_path, proxy_port=1080):
         return False
 
 
-def test_connectivity(proxy_port=1080, test_url="https://www.google.com/generate_204", timeout=5):
+def test_connectivity(proxy_port=1080, test_urls=None, timeout=5):
     """
-    Test connectivity through SOCKS5 proxy and measure latency
+    Test connectivity through SOCKS5 proxy and measure latency.
+    Tries each URL until one succeeds.
     """
+    if not test_urls:
+        test_urls = DEFAULT_TEST_URLS
+
     proxies = {
         'http': f'socks5://127.0.0.1:{proxy_port}',
         'https': f'socks5://127.0.0.1:{proxy_port}'
     }
     
     try:
-        start_time = time.time()
-        response = requests.get(test_url, proxies=proxies, timeout=timeout)
-        end_time = time.time()
+        last_latency = 0
+        last_message = "No attempts made"
+
+        for url in test_urls:
+            start_time = time.time()
+            try:
+                print(f"Testing {url} with proxies {proxies}")
+                response = requests.get(url, proxies=proxies, timeout=timeout)
+                
+                end_time = time.time()
+                latency = (end_time - start_time) * 1000  # Convert to milliseconds
+                
+                if response.status_code in (200, 204):
+                    return True, latency, f"Success via {url}"
+                last_latency = latency
+                last_message = f"HTTP {response.status_code} via {url}"
+            except requests.exceptions.Timeout:
+                last_latency = timeout * 1000
+                last_message = f"Timeout via {url}"
+            except requests.exceptions.ConnectionError:
+                last_latency = 0
+                last_message = f"Connection Error via {url}"
+            except Exception as e:  # pylint: disable=broad-except
+                last_latency = 0
+                last_message = f"{str(e)} via {url}"
         
-        latency = (end_time - start_time) * 1000  # Convert to milliseconds
-        
-        if response.status_code == 204:
-            return True, latency, "Success"
-        else:
-            return False, latency, f"HTTP {response.status_code}"
+        return False, last_latency, last_message
             
-    except requests.exceptions.Timeout:
-        return False, timeout * 1000, "Timeout"
-    except requests.exceptions.ConnectionError:
-        return False, 0, "Connection Error"
     except Exception as e:
         return False, 0, str(e)
 
 
-def run_hysteria_test(config_path, proxy_port=1080, test_url="https://www.google.com/generate_204", test_duration=15):
+def run_hysteria_test(config_path, proxy_port=1080, test_urls=None, test_duration=15):
     """
     Run Hysteria with a config and test connectivity
     """
     config_name = os.path.basename(config_path).replace('.yaml', '')
     test_config_path = config_path.replace('.yaml', '_test.yaml')
     
-    print(f"🧪 Testing config: {config_name}")
+    print(f"🧪 Testing config---: {config_name} (SOCKS5 port {proxy_port})")
     
     # Create test config with SOCKS5 proxy
     if not create_test_config(config_path, test_config_path, proxy_port):
@@ -97,11 +138,29 @@ def run_hysteria_test(config_path, proxy_port=1080, test_url="https://www.google
             text=True
         )
         
-        # Wait a bit for Hysteria to start
-        time.sleep(3)
-        
-        # Test connectivity
-        success, latency, message = test_connectivity(proxy_port, test_url)
+        # Wait a bit for Hysteria to start and become ready
+        # We will also allow a couple of connection attempts before
+        # giving up, in case the process is a bit slow to come up.
+        ready = False
+        success = False
+        latency = 0
+        message = "Not started"
+
+        start_time = time.time()
+        while time.time() - start_time < test_duration:
+            # If the process died early, bail out
+            if process.poll() is not None:
+                message = "Hysteria process exited prematurely"
+                break
+
+            # Try a connectivity test
+            success, latency, message = test_connectivity(proxy_port, test_urls, timeout=5)
+            if success:
+                ready = True
+                break
+
+            # Small backoff before next attempt
+            time.sleep(2)
         
         # Stop Hysteria process
         process.terminate()
@@ -122,7 +181,7 @@ def run_hysteria_test(config_path, proxy_port=1080, test_url="https://www.google
         return False, 0, f"Process error: {str(e)}"
 
 
-def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_url="https://www.google.com/generate_204"):
+def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_urls=None):
     """
     Test all config files and return results
     """
@@ -133,14 +192,18 @@ def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_url="http
         return []
     
     print(f"🔍 Found {len(config_files)} config file(s)")
-    print(f"🌐 Testing connectivity to: {test_url}")
+    working_test_urls = test_urls or DEFAULT_TEST_URLS
+    print(f"🌐 Testing connectivity to: {', '.join(working_test_urls)}")
     print(f"🔌 Using SOCKS5 proxy on port: {proxy_port}")
     print("-" * 50)
     
     results = []
     
-    for config_file in config_files:
-        success, latency, message = run_hysteria_test(config_file, proxy_port, test_url)
+    for idx, config_file in enumerate(config_files):
+        # Use a unique SOCKS5 port per config to avoid any chance of
+        # port binding conflicts between tests.
+        current_port = proxy_port + idx
+        success, latency, message = run_hysteria_test(config_file, current_port, working_test_urls)
         
         config_name = os.path.basename(config_file).replace('.yaml', '')
         results.append({
@@ -205,15 +268,17 @@ def main():
                        help='Config directory path')
     parser.add_argument('-p', '--port', type=int, default=1080, 
                        help='SOCKS5 proxy port')
-    parser.add_argument('-u', '--url', default='https://www.google.com/generate_204', 
-                       help='Test URL')
+    parser.add_argument('-u', '--url', default=None,
+                       help='Test URL(s). Comma-separated to provide multiple options.')
     parser.add_argument('--return-best', action='store_true',
                        help='Return the best config name instead of printing summary')
     
     args = parser.parse_args()
     
+    test_urls = resolve_test_urls(args.url)
+
     # Test all configs
-    results = test_all_configs(args.dir, args.port, args.url)
+    results = test_all_configs(args.dir, args.port, test_urls)
     
     # Get best config
     best_config = print_test_summary(results)
@@ -221,7 +286,8 @@ def main():
     if args.return_best:
         # Return best config for shell script use
         if best_config:
-            print(best_config)  # This will be captured by shell
+             # 打印到 标准输出 (stdout) 的所有内容，并将其作为变量的值由shell读取。Python不需要使用 return 关键字，而是需要使用 print() 函数将结果输出到标准输出。
+            print(best_config) 
             sys.exit(0)
         else:
             sys.exit(1)

@@ -17,9 +17,9 @@ import glob
 
 
 class PeriodicTester:
-    def __init__(self, config_dir="/etc/hysteria", test_interval=300, current_config_file="/tmp/current_config.json"):
+    def __init__(self, config_dir="/etc/hysteria", test_interval=180, current_config_file="/tmp/current_config.json"):
         self.config_dir = config_dir
-        self.test_interval = test_interval  # 5 minutes = 300 seconds
+        self.test_interval = test_interval  # default 3 minutes = 180 seconds
         self.current_config_file = current_config_file
         self.running = True
         self.hysteria_process = None
@@ -270,8 +270,8 @@ def main():
     parser = argparse.ArgumentParser(description='Periodic Hysteria config tester')
     parser.add_argument('-d', '--dir', default='/etc/hysteria', 
                        help='Config directory path')
-    parser.add_argument('-i', '--interval', type=int, default=300, 
-                       help='Test interval in seconds (default: 300 = 5 minutes)')
+    parser.add_argument('-i', '--interval', type=int, default=180, 
+                       help='Test interval in seconds (default: 180 = 3 minutes)')
     parser.add_argument('-c', '--config', 
                        help='Initial config to start with')
     

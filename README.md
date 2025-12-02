@@ -7,8 +7,8 @@ This repository provides a Docker setup for running the Hysteria client. Hysteri
 To get started with the Hysteria client in Docker, follow these simple steps:
 
 1. **Add your URLs**: 
-   `config/urls.txt` is used to add your desired URLs. 
-   Note that the current implementation supports only one URL.
+   Add one or more Hysteria URLs to `config/urls.txt`. The container
+   will parse every valid line and generate matching config files automatically.
 
 2. **Build and Run with Docker**:
    Execute the following command in your terminal:
@@ -19,6 +19,16 @@ To get started with the Hysteria client in Docker, follow these simple steps:
 
 This command will build the necessary Docker images and start the Hysteria client service.
 
+On startup the container:
+
+- parses every URL in `config/urls.txt` and generates YAML configs;
+- tests each config on an auxiliary SOCKS port (so that the public `1080/1089`
+  ports stay free) and picks the fastest working option; and
+- launches `periodic_tester.py`, which keeps the selected config running on
+  `0.0.0.0:1080` (SOCKS5) and `0.0.0.0:1089` (HTTP) while re-testing every
+  3 minutes on background ports to switch automatically when a better link
+  appears.
+
 
 ## Exposed Ports
 
@@ -26,9 +36,20 @@ The following ports are exposed for communication:
 
 - **SOCKS Port**: `1080`
 - **HTTP Port**: `1089`
+## Environment
+
+- `HYSTERIA_TEST_INTERVAL` (seconds, default `180`): how often the periodic
+  tester reruns connectivity checks in the background while clients use the
+  main proxy ports.
+- `HYSTERIA_TEST_URLS` (comma separated): override the default list of
+  probe endpoints (`https://cp.cloudflare.com/generate_204`,
+  `https://www.bing.com`, `https://www.google.com/generate_204`) used during
+  connectivity tests. This is useful if some sites are blocked in your region.
+
 ## Usage
 
-After the service is up and running, the Hysteria client will be configured based on the URL specified in your `urls.txt` file. You can then interact with the service as needed.
+After the service is up and running, point your devices at `localhost:1080`
+(SOCKS5) or `localhost:1089` (HTTP) to use the selected Hysteria tunnel.
 
 ## Contributing
 
