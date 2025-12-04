@@ -2,6 +2,10 @@
 
 **Languages**: English | [中文说明](README_zh.md)
 
+Most traditional proxy protocols can help in some situations, but they often **do not truly make your internet connection smooth or stable**.  
+**Hysteria** is different: it is designed to keep your connection responsive even on poor or unstable networks, greatly improving everyday browsing and streaming experiences.  
+However, there are still **not many clients that conveniently support Hysteria**. This project provides a Docker-based Hysteria client so you can easily benefit from Hysteria on your devices.
+
 This repository provides a Docker setup for running the Hysteria client. Hysteria is a project designed for secure, high-performance communication.
 
 ## Quick Start
