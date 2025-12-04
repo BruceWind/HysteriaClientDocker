@@ -11,3 +11,5 @@
 # For testing purposes, you can add multiple URLs to test the selection logic:
 # hysteria2://test1@server1:443?insecure=1&sni=example1.com#Test-Server-1
 # hysteria2://test2@server2:443?insecure=1&sni=example2.com#Test-Server-2
+hysteria2://df476f1c@vs5.goodclient.top:57021?insecure=1&mport=57021&sni=www.bing.com#V5-%E6%8A%97%E4%B8%A2%E5%8C%85
+hysteria2://d4aa6c84@vs3.goodclient.top:11092?insecure=1&mport=11092,20000-40000&sni=www.bing.com#V3-抗丢包
