@@ -5,8 +5,6 @@ services:
     build: .
     container_name: hysteria-client
     ports:
-      - "443:443/udp"
-      - "443:443/tcp"
       # Add SOCKS5 proxy port if needed
       - "1080:1080"
       - "1089:1089"

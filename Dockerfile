@@ -35,7 +35,7 @@ COPY . .
 RUN chmod +x start.sh
 
 # Expose ports for Hysteria (default ports)
-EXPOSE 443/udp 443/tcp
+EXPOSE 4108943/udp 1089/tcp
 
 # Use start script as entrypoint
 CMD ["./start.sh"]
