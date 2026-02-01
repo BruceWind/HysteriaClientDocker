@@ -26,14 +26,21 @@ APP_CONFIG_DIR="/app/config"
 # This interval should be greater than 300 seconds, otherwise connections may drop too quickly.
 TEST_INTERVAL="${HYSTERIA_TEST_INTERVAL:-300}"
 
+# Debug: Show URL environment variables
+echo "🔍 Checking for URL environment variables..."
+env | grep -E "^URL[0-9]+" || echo "   No URL1, URL2, ... variables found in environment"
+
 # Copy urls.txt from mounted volume to /etc/hysteria/ if it exists
 if [ -f "${APP_CONFIG_DIR}/urls.txt" ]; then
     echo "📄 Found urls.txt in ${APP_CONFIG_DIR}/, copying to ${CONFIG_DIR}/"
     cp "${APP_CONFIG_DIR}/urls.txt" "${CONFIG_DIR}/urls.txt"
 fi
 
+# Check if URL1 is set (handles both empty and unset cases)
+URL1_SET=$(env | grep -c "^URL1=" || true)
+
 # Check if urls.txt file exists OR if URL1 environment variable is set
-if [ -f "${CONFIG_DIR}/urls.txt" ] || [ -n "${URL1}" ]; then
+if [ -f "${CONFIG_DIR}/urls.txt" ] || [ "$URL1_SET" -gt 0 ]; then
     echo "🔗 Processing Hysteria URLs..."
     if python3 /app/url_parser.py --batch; then
         echo "✅ Configurations generated successfully"
