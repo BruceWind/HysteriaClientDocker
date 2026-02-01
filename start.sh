@@ -21,13 +21,20 @@ hysteria version
 rm -f /etc/hysteria/*.yaml
 
 CONFIG_DIR="/etc/hysteria"
+APP_CONFIG_DIR="/app/config"
 
 # This interval should be greater than 300 seconds, otherwise connections may drop too quickly.
 TEST_INTERVAL="${HYSTERIA_TEST_INTERVAL:-300}"
 
-# Check if urls.txt file exists and process URLs
-if [ -f "${CONFIG_DIR}/urls.txt" ]; then
-    echo "🔗 Processing Hysteria URLs from urls.txt..."
+# Copy urls.txt from mounted volume to /etc/hysteria/ if it exists
+if [ -f "${APP_CONFIG_DIR}/urls.txt" ]; then
+    echo "📄 Found urls.txt in ${APP_CONFIG_DIR}/, copying to ${CONFIG_DIR}/"
+    cp "${APP_CONFIG_DIR}/urls.txt" "${CONFIG_DIR}/urls.txt"
+fi
+
+# Check if urls.txt file exists OR if URL1 environment variable is set
+if [ -f "${CONFIG_DIR}/urls.txt" ] || [ -n "${URL1}" ]; then
+    echo "🔗 Processing Hysteria URLs..."
     if python3 /app/url_parser.py --batch; then
         echo "✅ Configurations generated successfully"
         echo "📁 Generated config files in ${CONFIG_DIR}/"
@@ -95,9 +102,10 @@ if [ -f "${CONFIG_DIR}/urls.txt" ]; then
         exit 1
     fi
 else
-    echo "📝 No urls.txt file found in /etc/hysteria/"
-    echo "💡 To use URL parsing, create config/urls.txt with your Hysteria URLs"
-    echo "   Example:"
+    echo "📝 No urls.txt file found and no URL environment variables set"
+    echo "💡 Option 1: Create config/urls.txt with your Hysteria URLs"
+    echo "💡 Option 2: Set environment variables URL1, URL2, URL3, ..."
+    echo "   Example URL:"
     echo "   hysteria2://password@server:port?insecure=1&sni=example.com#Server-Name"
     echo ""
     echo "📋 Available commands:"
