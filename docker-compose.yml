@@ -9,7 +9,7 @@ services:
       - "1080:1080"
       - "1089:1089"
     volumes:
-      - ./config:/etc/hysteria
+      - ./config:/app/config
       - ./logs:/app/logs
       - ./data:/app/data
     environment:
