@@ -10,8 +10,18 @@
 
 按照以下步骤即可快速在 Docker 中运行 Hysteria 客户端：
 
-1. **添加你的 URL：**  
+1. **添加你的 URL**（任选一种方式）：
+
+   **方式 A：使用文件**  
    在 `config/urls.txt` 中添加一个或多个 Hysteria URL。容器启动时会解析每一行合法的 URL，并自动生成对应的配置文件。
+
+   **方式 B：使用环境变量**  
+   在 `docker-compose.yml` 或容器平台（如 Coolify、Portainer）中设置环境变量 `URL1`、`URL2`、`URL3` 等：
+   ```yaml
+   environment:
+     - URL1=hysteria2://password@server1:port?insecure=1&sni=example.com#Server1
+     - URL2=hysteria2://password@server2:port?insecure=1&sni=example.com#Server2
+   ```
 
 2. **使用 Docker 构建并运行：**
 
@@ -25,7 +35,8 @@
 
 容器启动后将执行以下操作：
 
-- 解析 `config/urls.txt` 中的每个 URL 并生成对应的 YAML 配置文件；
+- 解析 `config/urls.txt` 和/或环境变量（`URL1`、`URL2`、...）中的 URL；
+- 为每个 URL 生成对应的 YAML 配置文件；
 - 在辅助 SOCKS 端口上测试每个配置（这样公共端口 `1080/1089` 保持空闲），并自动选择最快且可用的配置；
 - 启动 `boot_with_periordic_tester.py`，在 `0.0.0.0:1080`（SOCKS5）和 `0.0.0.0:1089`（HTTP）上保持当前选中的配置持续运行，同时每 3 分钟在后台端口上重新测试连接质量，当发现更优链路时自动切换。
 
@@ -46,6 +57,8 @@
 
 ## 环境变量
 
+- `URL1`、`URL2`、`URL3`、... ：Hysteria URL（可作为 `config/urls.txt` 的替代方式）。
+  如果同时提供文件和环境变量，两者的 URL 会合并使用。
 - `HYSTERIA_TEST_INTERVAL`（单位：秒，默认值 `180`）：周期性测试脚本在后台重新进行连通性检测的时间间隔。在此期间，客户端会持续使用主代理端口。
 - `HYSTERIA_TEST_URLS`（逗号分隔）：覆盖默认的探测 URL 列表  
   （默认值：`https://cp.cloudflare.com/generate_204`、`https://www.bing.com`、`https://www.google.com/generate_204`）。  

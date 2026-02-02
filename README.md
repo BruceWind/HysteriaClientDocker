@@ -12,9 +12,19 @@ This repository provides a Docker setup for running the Hysteria client. Hysteri
 
 To get started with the Hysteria client in Docker, follow these simple steps:
 
-1. **Add your URLs**: 
+1. **Add your URLs** (choose one method):
+
+   **Option A: Using a file**  
    Add one or more Hysteria URLs to `config/urls.txt`. The container
    will parse every valid line and generate matching config files automatically.
+
+   **Option B: Using environment variables**  
+   Set environment variables `URL1`, `URL2`, `URL3`, etc. in your `docker-compose.yml` or container platform (e.g., Coolify, Portainer):
+   ```yaml
+   environment:
+     - URL1=hysteria2://password@server1:port?insecure=1&sni=example.com#Server1
+     - URL2=hysteria2://password@server2:port?insecure=1&sni=example.com#Server2
+   ```
 
 2. **Build and Run with Docker**:
    Execute the following command in your terminal:
@@ -27,7 +37,8 @@ This command will build the necessary Docker images and start the Hysteria clien
 
 On startup the container:
 
-- parses every URL in `config/urls.txt` and generates YAML configs;
+- parses URLs from `config/urls.txt` and/or environment variables (`URL1`, `URL2`, ...);
+- generates YAML configs for each URL;
 - tests each config on an auxiliary SOCKS port (so that the public `1080/1089`
   ports stay free) and picks the fastest working option; and
 - launches `boot_with_periordic_tester.py`, which keeps the selected config running on
@@ -59,6 +70,8 @@ The following ports are exposed for communication:
 - **HTTP Port**: `1089`
 ## Environment
 
+- `URL1`, `URL2`, `URL3`, ... : Hysteria URLs to use (alternative to `config/urls.txt`).
+  Both sources are combined if both are provided.
 - `HYSTERIA_TEST_INTERVAL` (seconds, default `180`): how often the periodic
   tester reruns connectivity checks in the background while clients use the
   main proxy ports.
