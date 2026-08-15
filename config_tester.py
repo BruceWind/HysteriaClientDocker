@@ -70,7 +70,7 @@ def create_test_config(base_config_path, test_config_path, proxy_port=1080):
         return False
 
 
-def test_connectivity(proxy_port=1080, test_urls=None, timeout=5):
+def test_connectivity(proxy_port=1080, test_urls=None, timeout=5, verbose=True):
     """
     Test connectivity through SOCKS5 proxy and measure latency.
     Tries each URL until one succeeds.
@@ -90,7 +90,8 @@ def test_connectivity(proxy_port=1080, test_urls=None, timeout=5):
         for url in test_urls:
             start_time = time.time()
             try:
-                print(f"Testing {url} with proxies {proxies}", flush=True)
+                if verbose:
+                    print(f"Testing {url} with proxies {proxies}", flush=True)
                 response = requests.get(url, proxies=proxies, timeout=timeout)
                 
                 end_time = time.time()
@@ -116,7 +117,9 @@ def test_connectivity(proxy_port=1080, test_urls=None, timeout=5):
         return False, 0, str(e)
 
 
-def run_hysteria_test(config_path, proxy_port=1080, test_urls=None, test_duration=15):
+def run_hysteria_test(
+    config_path, proxy_port=1080, test_urls=None, test_duration=15, quiet=False
+):
     """
     Run Hysteria with a config and test connectivity
     """
@@ -153,7 +156,9 @@ def run_hysteria_test(config_path, proxy_port=1080, test_urls=None, test_duratio
                 break
 
             # Try a connectivity test
-            success, latency, message = test_connectivity(proxy_port, test_urls, timeout=5)
+            success, latency, message = test_connectivity(
+                proxy_port, test_urls, timeout=5, verbose=not quiet
+            )
             if success:
                 ready = True
                 break
@@ -205,7 +210,9 @@ def test_all_configs(config_dir="/etc/hysteria", proxy_port=1080, test_urls=None
         # Use a unique SOCKS5 port per config to avoid any chance of
         # port binding conflicts between tests.
         current_port = proxy_port + idx
-        success, latency, message = run_hysteria_test(config_file, current_port, working_test_urls)
+        success, latency, message = run_hysteria_test(
+            config_file, current_port, working_test_urls, quiet=quiet
+        )
         
         config_name = os.path.basename(config_file).replace('.yaml', '')
         results.append({

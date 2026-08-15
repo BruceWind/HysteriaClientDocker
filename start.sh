@@ -66,15 +66,14 @@ if [ -f "${CONFIG_DIR}/urls.txt" ] || [ "$URL1_SET" -gt 0 ]; then
             if python3 /app/config_tester.py; then
                 echo ""
                 echo "🚀 Automatically selecting the best performing config..."
-                best_config=$(python3 /app/config_tester.py --return-best || true)
+                best_config=$(python3 /app/config_tester.py --return-best)
 
-                if [ -n "$best_config" ]; then
-                    first_yaml=$(echo "$config_files" | tail -n 1) ## get last line
-                    echo "Fallback YAML file (last in list): $first_yaml"
-                    best_config=$(basename "$first_yaml") # 获取最后一个yaml文件的名称
-                    best_config="${best_config%.yaml}"
-                    # echo "ℹ️  Using fallback config: $best_config"
+                if [ -z "$best_config" ]; then
+                    echo "❌ No best config was returned"
+                    exit 1
                 fi
+
+                echo "Selected best config: $best_config"
 
                 echo ""
                 echo "🛠️  Proxy ports exposed inside the container:"
