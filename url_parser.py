@@ -35,7 +35,7 @@ def parse_hysteria_url(url):
             raise ValueError("Missing authentication in URL")
 
         # Extract query parameters
-        query_params = parse_qs(parsed.query)
+        query_params = parse_qs(parsed.query, keep_blank_values=True)
 
         # Extract name (fragment)
         name = unquote(parsed.fragment) if parsed.fragment else "Hysteria Client"
@@ -82,6 +82,13 @@ def parse_hysteria_url(url):
 
         if tls_config:
             config["tls"] = tls_config
+
+        # The obfs-password parameter selects Hysteria's salamander obfuscation.
+        if "obfs-password" in query_params:
+            config["obfs"] = {
+                "type": "salamander",
+                "salamander": {"password": query_params["obfs-password"][0]},
+            }
 
         # Parse bandwidth settings (if provided)
         if "up" in query_params:

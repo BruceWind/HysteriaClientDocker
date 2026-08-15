@@ -29,3 +29,7 @@ http:
 #   address: 172.19.0.2/30
 #   gateway: 172.19.0.1
 #   dns: 8.8.8.8
+#obfs:
+#  type: salamander 
+#  salamander:
+#    password: cry_me_a_r1ver 
